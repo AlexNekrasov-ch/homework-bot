@@ -249,8 +249,15 @@ def main():
     last_status = None
     timestamp = int(time.time())
     last_error_message = None  # To control duplicate errors in Telegram
+    first_iteration = True
 
     while True:
+        if not first_iteration:
+            time.sleep(RETRY_PERIOD)
+        first_iteration = False
+
+        timestamp = int(time.time())
+
         try:
             last_status, timestamp = process_iteration(
                 bot, last_status, timestamp
@@ -258,6 +265,7 @@ def main():
 
             if last_status == 'approved':
                 logger.info('Работа сдана! Завершаем работу бота.')
+                time.sleep(RETRY_PERIOD)
                 break
 
         except (KeyError, TypeError, ValueError) as e:
@@ -268,9 +276,6 @@ def main():
 
         except Exception as e:
             last_error_message = handle_error(e, bot, last_error_message)
-
-        time.sleep(RETRY_PERIOD)
-        timestamp = int(time.time())
 
 
 if __name__ == '__main__':
