@@ -202,6 +202,41 @@ def parse_status(homework):
     )
 
 
+def handle_error(error, bot, last_error_message):
+    """Handle exceptions and send Telegram alert if it's a new error."""
+    error_msg = f'Data processing error: {error}'
+    logger.error(error_msg)
+
+    if last_error_message != error_msg:
+        try:
+            send_message(bot, error_msg)
+            return error_msg
+        except Exception:
+            logger.error('Couldn"t send error message.')
+            return last_error_message
+    return last_error_message
+
+
+def process_iteration(bot, last_status, timestamp):
+    """Perform one iteration of homework status check."""
+    response_dict = get_api_answer(timestamp)
+    homework_list = check_response(response_dict)
+
+    if not homework_list:
+        logger.debug('There are no new homework statuses.')
+        return last_status, timestamp
+
+    last_homework = homework_list[-1]
+    current_status = last_homework.get('status')
+
+    if current_status != last_status:
+        last_status = current_status
+        message = parse_status(last_homework)
+        send_message(bot, message)
+
+    return last_status, timestamp
+
+
 def main():
     """The basic logic of the bot's operation."""
     if not check_tokens():
@@ -217,58 +252,25 @@ def main():
 
     while True:
         try:
-            response_dict = get_api_answer(timestamp)
-            homework_list = check_response(response_dict)
+            last_status, timestamp = process_iteration(
+                bot, last_status, timestamp
+            )
 
-            if not homework_list:
-                logger.debug('There are no new homework statuses.')
-                time.sleep(RETRY_PERIOD)
-                timestamp = int(time.time())
-                continue
-
-            last_homework = homework_list[-1]
-            current_status = last_homework.get('status')
-
-            if current_status != last_status:
-                last_status = current_status
-                message = parse_status(last_homework)
-                send_message(bot, message)
-
-            if current_status == 'approved':
-                logger.info(
-                    'The work is completed! We are finishing the bot"s work.'
-                )
+            if last_status == 'approved':
+                logger.info('Работа сдана! Завершаем работу бота.')
                 break
 
-            time.sleep(RETRY_PERIOD)
-            timestamp = int(time.time())
-
         except (KeyError, TypeError, ValueError) as e:
-            error_msg = f'Data processing error: {e}'
-            logger.error(error_msg)
-            if last_error_message != error_msg:
-                try:
-                    send_message(bot, error_msg)
-                    last_error_message = error_msg
-                except Exception:
-                    logger.error('Couldn"t send error message.')
+            last_error_message = handle_error(e, bot, last_error_message)
 
         except (ConnectionError, TimeoutError) as e:
             logger.error(f'Connection error: {e}')
-            # Не отправляем в Telegram по заданию
 
         except Exception as e:
-            error_msg = f'Unexpected error: {e}'
-            logger.error(error_msg)
-            if last_error_message != error_msg:
-                try:
-                    send_message(bot, error_msg)
-                    last_error_message = error_msg
-                except Exception:
-                    logger.error('Couldn"t send error message.')
+            last_error_message = handle_error(e, bot, last_error_message)
 
-            time.sleep(RETRY_PERIOD)
-            timestamp = int(time.time())
+        time.sleep(RETRY_PERIOD)
+        timestamp = int(time.time())
 
 
 if __name__ == '__main__':
