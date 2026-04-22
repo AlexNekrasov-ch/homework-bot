@@ -249,13 +249,8 @@ def main():
     last_status = None
     timestamp = int(time.time())
     last_error_message = None  # To control duplicate errors in Telegram
-    first_iteration = True
 
     while True:
-        if not first_iteration:
-            time.sleep(RETRY_PERIOD)
-        first_iteration = False
-
         timestamp = int(time.time())
 
         try:
@@ -276,6 +271,8 @@ def main():
 
         except Exception as e:
             last_error_message = handle_error(e, bot, last_error_message)
+
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
