@@ -156,7 +156,7 @@ def check_response(response):
             logger.error(error_msg)
             raise KeyError(error_msg)
 
-    homeworks_list = response.get('homeworks')
+    homeworks_list = response['homeworks']
 
     if not isinstance(homeworks_list, list):
         error_msg = 'The value of the key homeworks is not a list'
@@ -189,12 +189,12 @@ def parse_status(homework):
         if key not in homework:
             logger.error(f'The homework dictionary is missing a key {key}')
             raise KeyError(f'Missing required key in homework dict: {key}')
-    homework_name = homework.get('homework_name')
-    status = homework.get('status')
+    homework_name = homework['homework_name']
+    status = homework['status']
     if status not in HOMEWORK_VERDICTS:
         logger.error(f'Unexpected homework status: {status}')
         raise ValueError(f'Unexpected homework status: {status}')
-    verdict = HOMEWORK_VERDICTS.get(status)
+    verdict = HOMEWORK_VERDICTS[status]
 
     return (
         'Изменился статус проверки работы "{}". {}'
