@@ -145,7 +145,8 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Checks the API response against the documentation."""
     if not isinstance(response, dict):
-        error_msg = 'The API response is not a dictionary.'
+        response_type = type(response).__name__
+        error_msg = f'The API response is not a dictionary. Got {response_type} instead.'
         logger.error(error_msg)
         raise TypeError(error_msg)
 
