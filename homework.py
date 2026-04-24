@@ -90,17 +90,17 @@ def send_message(bot, message):
 
     Logs:
         DEBUG: When the message is sent successfully.
-        ERROR: When sending fails (API error or other exceptions).
     """
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logger.debug('Successfully sent message.')
 
     except ApiTelegramException as e:
         raise
 
     except Exception as e:
         raise
+
+    logger.debug('Successfully sent message.')
 
 
 def get_api_answer(timestamp):
