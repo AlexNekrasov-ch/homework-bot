@@ -90,7 +90,7 @@ def send_message(bot, message):
         message (str): Text of the message to send.
 
     Raises:
-        ApiTelegramException: If the Telegram API returns an error.
+        ApiException, RequestException: If the Telegram API returns an error.
         Exception: For any other unexpected sending errors.
 
     Logs:
@@ -106,6 +106,7 @@ def send_message(bot, message):
         return False
 
     logger.debug('Successfully sent message.')
+
     return True
 
 
