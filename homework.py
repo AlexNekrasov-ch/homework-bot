@@ -60,19 +60,19 @@ class TelegramSendError(Exception):
 
 def check_tokens():
     """Checks the availability of environment variables."""
-    if not PRACTICUM_TOKEN:
+    tokens = {
+        'VERIFICATION_CODE': PRACTICUM_TOKEN,
+        'TOKEN': TELEGRAM_TOKEN,
+        'CHAT_ID': TELEGRAM_CHAT_ID,
+    }
+
+    missing = [name for name, value in tokens.items() if not value]
+
+    if missing:
         logger.critical(
-            'Missing required environment variable: VERIFICATION_CODE'
-        )
+            f'Missing required environment variables: {", ".join(missing)}')
         return False
-    if not TELEGRAM_TOKEN:
-        logger.critical('Missing required environment variable: TOKEN')
-        return False
-    if not TELEGRAM_CHAT_ID:
-        logger.critical(
-            'Missing required environment variable: CHAT_ID'
-        )
-        return False
+
     return True
 
 
