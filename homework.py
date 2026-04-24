@@ -41,6 +41,18 @@ HOMEWORK_VERDICTS = {
 }
 
 
+class APIConnectionError(Exception):
+    """Исключение для ошибок соединения с API."""
+
+    pass
+
+
+class APIResponseError(Exception):
+    """Exception for API response errors."""
+
+    pass
+
+
 def check_tokens():
     """Checks the availability of environment variables."""
     if not PRACTICUM_TOKEN:
@@ -83,11 +95,11 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug('Successfully sent message.')
+
     except ApiTelegramException as e:
-        logger.error(f'Telegram API error when sending: {e}')
         raise
+
     except Exception as e:
-        logger.error(f'Error sending message: {e}')
         raise
 
 
@@ -107,12 +119,10 @@ def get_api_answer(timestamp):
         dict: API response converted from JSON to a Python dictionary.
 
     Raises:
-        TimeoutError: If the request exceeds the 30-second timeout limit.
-        ConnectionError: If a network connection to the API
-        cannot be established.
-        Exception: For any other request-related errors
-        (e.g., invalid URL, SSL issues).
-        HTTPError: If the API returns an HTTP status code other than 200.
+        APIConnectionError: If request timeout, network connection fails,
+                            or any other request-related error occurs.
+        APIResponseError: If the API returns an HTTP status code
+                          other than 200.
 
     Logs:
         ERROR: Timeout, connection failure, request errors,
@@ -124,22 +134,17 @@ def get_api_answer(timestamp):
             ENDPOINT, headers=HEADERS, params=payload, timeout=30
         )
     except Timeout:
-        logger.error(f'Timeout while requesting endpoint {ENDPOINT}')
-        raise TimeoutError('The API response timed out')
+        raise APIConnectionError('The API response timed out')
 
     except ConnectionError:
-        logger.error(f'Endpoint connection error {ENDPOINT}')
-        raise ConnectionError('Failed to connect to the API')
+        raise APIConnectionError('Failed to connect to the API')
 
     except RequestException as e:
-        logger.error(f'Error while requesting API: {e}')
-        raise Exception(f'Request failed: {e}')
+        raise APIConnectionError(f'Request failed: {e}')
 
     if response.status_code != HTTPStatus.OK:
-        logger.error(
-            f'Endpoint unavailable. Response code: {response.status_code}'
-        )
-        raise HTTPError(f'The API returned the code {response.status_code}')
+        raise APIResponseError(
+            f'The API returned the code {response.status_code}')
 
     return response.json()
 
@@ -149,21 +154,18 @@ def check_response(response):
     if not isinstance(response, dict):
         response_type = type(response).__name__
         error_msg = f'The API response is not a dictionary. Got {response_type} instead.'
-        logger.error(error_msg)
         raise TypeError(error_msg)
 
     # control the presence of required keys
     for key in ['homeworks', 'current_date']:
         if key not in response:
             error_msg = f'The API response is missing a required key {key}'
-            logger.error(error_msg)
             raise KeyError(error_msg)
 
     homeworks_list = response['homeworks']
 
     if not isinstance(homeworks_list, list):
         error_msg = 'The value of the key homeworks is not a list'
-        logger.error(error_msg)
         raise TypeError(error_msg)
 
     # Return the homework list (may be empty)
@@ -190,12 +192,10 @@ def parse_status(homework):
     """
     for key in ['homework_name', 'status']:
         if key not in homework:
-            logger.error(f'The homework dictionary is missing a key {key}')
             raise KeyError(f'Missing required key in homework dict: {key}')
     homework_name = homework['homework_name']
     status = homework['status']
     if status not in HOMEWORK_VERDICTS:
-        logger.error(f'Unexpected homework status: {status}')
         raise ValueError(f'Unexpected homework status: {status}')
     verdict = HOMEWORK_VERDICTS[status]
 
@@ -271,6 +271,9 @@ def main():
 
         except (ConnectionError, TimeoutError) as e:
             logger.error(f'Connection error: {e}')
+
+        except (APIConnectionError, APIResponseError) as e:
+            last_error_message = handle_error(e, bot, last_error_message)
 
         except Exception as e:
             last_error_message = handle_error(e, bot, last_error_message)
