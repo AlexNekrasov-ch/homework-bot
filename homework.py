@@ -4,6 +4,8 @@ import sys
 import time
 from logging import StreamHandler
 
+from http import HTTPStatus
+
 import requests
 from dotenv import load_dotenv
 from requests.exceptions import (ConnectionError, HTTPError, RequestException,
@@ -133,7 +135,7 @@ def get_api_answer(timestamp):
         logger.error(f'Error while requesting API: {e}')
         raise Exception(f'Request failed: {e}')
 
-    if response.status_code != 200:
+    if response.status_code != HTTPStatus.OK:
         logger.error(
             f'Endpoint unavailable. Response code: {response.status_code}'
         )
