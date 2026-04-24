@@ -8,10 +8,9 @@ from http import HTTPStatus
 
 import requests
 from dotenv import load_dotenv
-from requests.exceptions import (ConnectionError, HTTPError, RequestException,
-                                 Timeout)
+from requests.exceptions import (ConnectionError, RequestException, Timeout)
 from telebot import TeleBot
-from telebot.apihelper import ApiTelegramException
+from telebot.apihelper import ApiException
 
 load_dotenv()
 
@@ -49,6 +48,12 @@ class APIConnectionError(Exception):
 
 class APIResponseError(Exception):
     """Exception for API response errors."""
+
+    pass
+
+
+class TelegramSendError(Exception):
+    """Raised when message cannot be sent to Telegram."""
 
     pass
 
@@ -94,13 +99,14 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
 
-    except ApiTelegramException as e:
-        raise
+    except (ApiException, RequestException):
+        return False
 
-    except Exception as e:
-        raise
+    except Exception:
+        return False
 
     logger.debug('Successfully sent message.')
+    return True
 
 
 def get_api_answer(timestamp):
@@ -211,12 +217,11 @@ def handle_error(error, bot, last_error_message):
     logger.error(error_msg)
 
     if last_error_message != error_msg:
-        try:
-            send_message(bot, error_msg)
-            return error_msg
-        except Exception:
-            logger.error('Couldn"t send error message.')
-            return last_error_message
+        sent = send_message(bot, error_msg)
+        if not sent:
+            raise TelegramSendError('Couldn"t send error message to Telegram.')
+        return error_msg
+
     return last_error_message
 
 
@@ -235,8 +240,9 @@ def process_iteration(bot, last_status, timestamp):
     if current_status != last_status:
         last_status = current_status
         message = parse_status(last_homework)
-        send_message(bot, message)
-
+        sent = send_message(bot, message)
+        if not sent:
+            raise TelegramSendError('Couldn"t send error message to Telegram.')
     return last_status, timestamp
 
 
@@ -263,17 +269,19 @@ def main():
 
             if last_status == 'approved':
                 logger.info('Работа сдана! Завершаем работу бота.')
-                time.sleep(RETRY_PERIOD)
                 break
 
         except (KeyError, TypeError, ValueError) as e:
             last_error_message = handle_error(e, bot, last_error_message)
 
+        except (APIConnectionError, APIResponseError) as e:
+            last_error_message = handle_error(e, bot, last_error_message)
+
         except (ConnectionError, TimeoutError) as e:
             logger.error(f'Connection error: {e}')
 
-        except (APIConnectionError, APIResponseError) as e:
-            last_error_message = handle_error(e, bot, last_error_message)
+        except TelegramSendError:
+            logger.error('Couldn"t send error message to Telegram.')
 
         except Exception as e:
             last_error_message = handle_error(e, bot, last_error_message)
