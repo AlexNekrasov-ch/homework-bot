@@ -2,13 +2,12 @@ import logging
 import os
 import sys
 import time
-from logging import StreamHandler
-
 from http import HTTPStatus
+from logging import StreamHandler
 
 import requests
 from dotenv import load_dotenv
-from requests.exceptions import (ConnectionError, RequestException, Timeout)
+from requests.exceptions import ConnectionError, RequestException, Timeout
 from telebot import TeleBot
 from telebot.apihelper import ApiException
 
@@ -160,7 +159,10 @@ def check_response(response):
     """Checks the API response against the documentation."""
     if not isinstance(response, dict):
         response_type = type(response).__name__
-        error_msg = f'The API response is not a dictionary. Got {response_type} instead.'
+        error_msg = (
+            f'The API response is not a dictionary. '
+            f'Got {response_type} instead.'
+        )
         raise TypeError(error_msg)
 
     # control the presence of required keys
