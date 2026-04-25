@@ -64,9 +64,8 @@ def check_tokens():
     if missing:
         logger.critical(
             f'Missing required environment variables: {", ".join(missing)}')
-        return False
 
-    return True
+    return not missing
 
 
 def send_message(bot, message):
