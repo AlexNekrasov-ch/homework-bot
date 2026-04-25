@@ -127,23 +127,37 @@ def get_api_answer(timestamp):
         ERROR: Timeout, connection failure, request errors,
         or non-200 status codes.
     """
-    payload = {'from_date': timestamp}
+    request_params = {
+        'url': ENDPOINT,
+        'headers': HEADERS,
+        'params': {'from_date': timestamp},
+        'timeout': 30,
+    }
+
     try:
-        response = requests.get(
-            ENDPOINT, headers=HEADERS, params=payload, timeout=30
-        )
+        response = requests.get(**request_params)
+
     except Timeout:
-        raise APIConnectionError('The API response timed out')
+        raise APIConnectionError(
+            f'Timeout while requesting {request_params['url']} '
+            f'with params {request_params['params']}'
+        )
 
     except ConnectionError:
-        raise APIConnectionError('Failed to connect to the API')
+        raise APIConnectionError(
+            f'Connection error while requesting {request_params['url']}'
+        )
 
     except RequestException as e:
-        raise APIConnectionError(f'Request failed: {e}')
+        raise APIConnectionError(
+            f'Request failed for {request_params['url']}: {e}'
+        )
 
     if response.status_code != HTTPStatus.OK:
         raise APIResponseError(
-            f'The API returned the code {response.status_code}')
+            f'API returned code {response.status_code} '
+            f'for URL {ENDPOINT} with params {request_params['params']}'
+        )
 
     return response.json()
 
