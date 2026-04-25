@@ -42,19 +42,13 @@ HOMEWORK_VERDICTS = {
 class APIConnectionError(Exception):
     """Исключение для ошибок соединения с API."""
 
-    pass
-
 
 class APIResponseError(Exception):
     """Exception for API response errors."""
 
-    pass
-
 
 class TelegramSendError(Exception):
     """Raised when message cannot be sent to Telegram."""
-
-    pass
 
 
 def check_tokens():
