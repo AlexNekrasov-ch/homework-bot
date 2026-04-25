@@ -137,15 +137,15 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(**request_params)
 
-    except Timeout:
+    except Timeout as e:
         raise APIConnectionError(
             f'Timeout while requesting {request_params['url']} '
-            f'with params {request_params['params']}'
+            f'with params {request_params['params']}: {e}'
         )
 
-    except ConnectionError:
+    except ConnectionError as e:
         raise APIConnectionError(
-            f'Connection error while requesting {request_params['url']}'
+            f'Connection error while requesting {request_params['url']}: {e}'
         )
 
     except RequestException as e:
