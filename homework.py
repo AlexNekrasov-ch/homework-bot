@@ -139,24 +139,23 @@ def get_api_answer(timestamp):
 
     except Timeout as e:
         raise APIConnectionError(
-            f'Timeout while requesting {request_params['url']} '
-            f'with params {request_params['params']}: {e}'
-        )
+            f'Timeout while requesting {request_params["url"]}: {e}'
+        ) from e
 
     except ConnectionError as e:
         raise APIConnectionError(
-            f'Connection error while requesting {request_params['url']}: {e}'
-        )
+            f'Connection error while requesting {request_params["url"]}: {e}'
+        ) from e
 
     except RequestException as e:
         raise APIConnectionError(
-            f'Request failed for {request_params['url']}: {e}'
-        )
+            f'Request failed for {request_params["url"]}: {e}'
+        ) from e
 
     if response.status_code != HTTPStatus.OK:
         raise APIResponseError(
             f'API returned code {response.status_code} '
-            f'for URL {ENDPOINT} with params {request_params['params']}'
+            f'for URL {ENDPOINT} with params {request_params["params"]}'
         )
 
     return response.json()
